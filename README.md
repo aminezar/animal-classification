@@ -39,7 +39,6 @@ The project explores two main approaches:
 
 ```
 animalclassification/
-├── CLAUDE.md                           # Detailed project requirements and guidelines
 ├── README.md                           # This file
 ├── starterskit/                        # Starter code and notebooks
 │   ├── biasvariance_learningcurve.ipynb  # Bias/variance analysis tutorial
@@ -78,15 +77,13 @@ Extract these files into the project root directory.
 
 Models are evaluated using **Multi-class Log Loss (Cross-Entropy Loss)**:
 
-```
-L = -1/N * Σ Σ y_n^c * log(p_n^c)
-```
+$$L = -\frac{1}{N}\sum_{n=1}^N\sum_{c=1}^C y_n^c \log(p_n^c)$$
 
 Where:
-- N = number of samples
-- C = number of classes (12)
-- y_n^c = true class label (1 if sample n belongs to class c, 0 otherwise)
-- p_n^c = predicted probability that sample n belongs to class c
+- $N$ = number of samples
+- $C$ = number of classes (12)
+- $y_n^c$ = true class label (1 if sample n belongs to class c, 0 otherwise)
+- $p_n^c$ = predicted probability that sample n belongs to class c
 
 ## Submission Format
 
@@ -148,7 +145,3 @@ Project deadline: January 15, 2025, 23:59
 ## License
 
 This project was developed for educational purposes as part of the VUB Machine Learning course.
-
-## References
-
-See `CLAUDE.md` for complete project requirements, evaluation criteria, and detailed guidelines.
