@@ -1,147 +1,99 @@
-# Animal Classification - VUB ML Project 2024
+# Animal Image Classification
 
-A machine learning project for classifying 12 animal species using both traditional Visual Bag-of-Words (VBoW) approaches and Convolutional Neural Networks (CNNs).
+**VUB Machine Learning course project · Python · scikit-learn · XGBoost · PyTorch**
 
-## Project Overview
+A comparison of two ways to classify images into **12 animal classes**: a visual bag-of-words pipeline built from local image descriptors, and transfer-learning features from a pretrained ResNet50.
 
-This project was developed as part of the Machine Learning course at VUB (Vrije Universiteit Brussel) in 2024. The goal is to build classification models that can distinguish between 12 classes of animals from images.
+The project explores representation choice, class imbalance, regularization and model evaluation. It is a coursework archive with saved notebook outputs, not a production classifier or a newly reproduced benchmark.
 
-### Animal Classes
+## Two approaches
 
-- Chicken
-- Elephant
-- Fox
-- German Shepherd
-- Golden Retriever
-- Horse
-- Jaguar
-- Lion
-- Owl
-- Parrot
-- Swan
-- Tiger
+### Local descriptors → visual vocabulary → classifier
 
-## Approaches
+[`main.ipynb`](starterskit/main.ipynb) loads cached local `vgg` descriptors, clusters them into a **250-word vocabulary** with MiniBatchKMeans, and represents each image as an L2-normalized histogram. It then explores:
 
-The project explores two main approaches:
+- A logistic-regression baseline.
+- MaxAbs scaling and SMOTE oversampling for the imbalanced classes.
+- XGBoost multiclass probability prediction, regularization and parameter search.
+- Chi-squared feature selection, classification reports, confusion matrices and learning curves.
 
-1. **Traditional ML with Visual Bag-of-Words (VBoW)**
-   - Feature extraction using SIFT, SURF, or ORB descriptors
-   - K-means clustering to create visual vocabulary
-   - Classification using scikit-learn algorithms (SVM, Random Forest, etc.)
+[`creating_vbow.ipynb`](starterskit/creating_vbow.ipynb) prepares the descriptor caches. Its `vgg` option is an **OpenCV local patch descriptor**, not the VGG convolutional network. It also exposes other descriptor callbacks; availability depends on the OpenCV build.
 
-2. **Deep Learning with Convolutional Neural Networks (CNNs)**
-   - Custom CNN architectures
-   - Transfer learning with pre-trained models
-   - Fine-tuning for animal classification
+### Pretrained ResNet50 → regularized logistic regression
 
-## Project Structure
+[`cnn_feature_extraction.ipynb`](starterskit/cnn_feature_extraction.ipynb) removes ResNet50's classification layer and uses its ImageNet-pretrained representation as a feature extractor. It applies a stratified validation split, feature standardization and class-balanced logistic regression with strong regularization.
 
+This is **frozen CNN feature extraction**, not training a custom CNN or fine-tuning ResNet50 end to end.
+
+## Archived results
+
+The committed notebook outputs report:
+
+| Experiment | Recorded held-out accuracy | Source |
+|---|---:|---|
+| Bag-of-words logistic-regression baseline | 39.1% | `main.ipynb`, first-model output |
+| Bag-of-words XGBoost classifier | 42% | `main.ipynb`, final classification report |
+| ResNet50 features + logistic regression | 95% | `cnn_feature_extraction.ipynb`, validation classification report |
+
+The XGBoost notebook also records a held-out multiclass log loss of **1.6197**. Its CSV submissions contain per-class probabilities, rather than only predicted labels.
+
+**These are historical outputs, not results rerun for this documentation update.** The two approaches use different split configurations, so the table is not a controlled, same-split comparison. In particular, the current CNN code fits the classifier on scaled features but calls prediction on unscaled validation/test features. Its saved 95% report needs a consistent preprocessing rerun before being treated as a reproducible benchmark.
+
+## Explore the repository
+
+| File | Purpose |
+|---|---|
+| [`main.ipynb`](starterskit/main.ipynb) | Project-specific bag-of-words analysis and XGBoost experiments |
+| [`cnn_feature_extraction.ipynb`](starterskit/cnn_feature_extraction.ipynb) | ResNet50 representation and logistic-regression comparison |
+| [`creating_vbow.ipynb`](starterskit/creating_vbow.ipynb) | Descriptor extraction and cached visual features |
+| [`features.py`](starterskit/features.py) | OpenCV descriptor callbacks and image-feature records |
+| [`helpers.py`](starterskit/helpers.py) | Codebook construction, histogram encoding and submission export |
+| Other notebooks in [`starterskit/`](starterskit/) | Supporting data-analysis, example-pipeline and learning-curve material |
+
+## Local setup
+
+The image dataset and generated feature caches are **not included**. Obtain the course dataset independently and check its usage terms. Expected input layout:
+
+```text
+animal-data/
+├── train/
+│   ├── chicken/
+│   ├── elephant/
+│   └── ... one directory for each class
+└── test/
+    └── ... unlabelled images
 ```
-animalclassification/
-├── README.md                           # This file
-├── starterskit/                        # Starter code and notebooks
-│   ├── biasvariance_learningcurve.ipynb  # Bias/variance analysis tutorial
-│   ├── cnn_feature_extraction.ipynb      # CNN feature extraction
-│   ├── creating_vbow.ipynb               # Visual Bag-of-Words creation
-│   ├── data_analysis.ipynb               # Exploratory data analysis
-│   ├── example_classification_pipeline.ipynb  # Classification pipeline example
-│   ├── main.ipynb                        # Main notebook
-│   ├── features.py                       # Feature extraction functions
-│   └── helpers.py                        # Helper functions
-├── train/                              # Training images (not included in repo)
-└── test/                               # Test images (not included in repo)
-```
 
-## Getting Started
-
-### Prerequisites
+Classes: chicken, elephant, fox, german shepherd, golden retriever, horse, jaguar, lion, owl, parrot, swan and tiger.
 
 ```bash
-pip install numpy pandas scikit-learn opencv-python matplotlib seaborn jupyter
-pip install torch torchvision  # For PyTorch-based CNNs
-# OR
-pip install tensorflow  # For TensorFlow-based CNNs
+git clone https://github.com/aminezar/animal-classification.git
+cd animal-classification
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install jupyterlab numpy pandas scipy scikit-learn xgboost imbalanced-learn opencv-contrib-python matplotlib seaborn pillow tqdm torch torchvision
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
+cd starterskit
+mkdir -p features/train features/test predictions
+jupyter lab
 ```
 
-### Data Setup
+Use `starterskit/` as the notebooks' working directory. Replace the machine-specific `dataset_path` values with the **same absolute dataset path** in each notebook and use a shared output directory. Use `opencv-contrib-python` rather than installing both OpenCV wheel variants into the same environment: the local `vgg` descriptor requires `cv2.xfeatures2d`.
 
-The training and test datasets are not included in this repository due to their size. Please download them from the original Kaggle competition or course materials:
+Suggested workflow:
 
-- `train.zip` - Labeled training data (animals sorted by class folders)
-- `test.zip` - Unlabeled test data for predictions
+1. Review the notebooks and the evaluation caveats below before executing them.
+2. Generate trusted descriptor caches with `creating_vbow.ipynb`; `main.ipynb` expects the `vgg` caches in `features/train/` and `features/test/`.
+3. Run the bag-of-words experiments in `main.ipynb`.
+4. For the CNN comparison, make the validation/test transformations consistent with the fitted scaler before rerunning `cnn_feature_extraction.ipynb`. ResNet50 weights may need downloading.
 
-Extract these files into the project root directory.
+Only load pickle caches you created or trust; pickle can execute code. Dependency versions are not pinned, and the original environment is not provided.
 
-## Evaluation
+## Evaluation notes
 
-Models are evaluated using **Multi-class Log Loss (Cross-Entropy Loss)**:
+- The class distribution is imbalanced; per-class precision, recall and F1 matter alongside overall accuracy.
+- The visual codebook is fitted before the held-out split, and resampling/feature selection occur before some cross-validation loops. Those CV scores should not be described as leakage-free estimates; a fresh benchmark should fit each learned preprocessing step inside its training fold.
+- Saved outputs can differ from the currently committed code or its execution order. Retraining, dataset loading and numeric reproduction were not performed for this README update.
+- The repository includes course starter/tutorial material as well as project-specific notebooks. It does not claim original authorship of all helper material, pretrained networks or library algorithms.
 
-$$L = -\frac{1}{N}\sum_{n=1}^N\sum_{c=1}^C y_n^c \log(p_n^c)$$
-
-Where:
-- $N$ = number of samples
-- $C$ = number of classes (12)
-- $y_n^c$ = true class label (1 if sample n belongs to class c, 0 otherwise)
-- $p_n^c$ = predicted probability that sample n belongs to class c
-
-## Submission Format
-
-Submissions should be CSV files with 13 columns:
-- `Id`: Test sample identifier
-- 12 class probability columns (in snake_case): `chicken`, `elephant`, `fox`, `german_shepherd`, `golden_retriever`, `horse`, `jaguar`, `lion`, `owl`, `parrot`, `swan`, `tiger`
-
-Example:
-```csv
-Id,chicken,elephant,fox,german_shepherd,golden_retriever,horse,jaguar,lion,owl,parrot,swan,tiger
-1,0.0,0.1,0.9,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-2,0.0,0.0,0.0,0.0,0.0,0.0,0.2,0.3,0.5,0.0,0.0,0.0
-```
-
-## Notebooks
-
-### Data Analysis
-- `data_analysis.ipynb` - Exploratory data analysis, class distribution, image statistics
-
-### Feature Extraction
-- `creating_vbow.ipynb` - Creating Visual Bag-of-Words features
-- `cnn_feature_extraction.ipynb` - Extracting features using pre-trained CNNs
-
-### Classification
-- `example_classification_pipeline.ipynb` - Complete ML pipeline example
-- `biasvariance_learningcurve.ipynb` - Model evaluation and learning curves
-
-### Main Notebook
-- `main.ipynb` - Comprehensive notebook with final models and results
-
-## Key Considerations
-
-### Data Analysis
-- Class distribution and balance
-- Image quality and size variations
-- Outlier detection
-
-### Preprocessing
-- Image normalization
-- Data augmentation
-- Feature scaling
-
-### Model Training
-- Train/validation/test splits
-- Cross-validation strategy
-- Hyperparameter tuning
-- Regularization techniques
-
-### Evaluation
-- Appropriate performance metrics
-- Learning curves
-- Error analysis
-- Avoiding overfitting to public leaderboard
-
-## Deadline
-
-Project deadline: January 15, 2025, 23:59
-
-## License
-
-This project was developed for educational purposes as part of the VUB Machine Learning course.
+This repository provides no blanket software or dataset redistribution license. Retain existing source attribution and obtain any required permissions for reuse.
